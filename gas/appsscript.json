@@ -17,7 +17,7 @@
     "enabledAdvancedServices": [
       {
         "userSymbol": "People",
-        "serviceId": "people",
+        "serviceId": "peopleapi",
         "version": "v1"
       }
     ]
