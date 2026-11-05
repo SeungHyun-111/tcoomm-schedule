@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { defaultListRange, parseListDate, listMonths } from '../utils/listDates'
 import { loadFullList } from '../services/fullList'
 import { safeStorage } from '../services/storage'
@@ -41,16 +41,41 @@ export default function FullListPage({ session }) {
   const [open, setOpen] = useState(null)
   const [page, setPage] = useState(1)
   const [edit, setEdit] = useState(null)
-  useVisibleRefresh(true, () => setRevision(value => value + 1))
+  const activeEditors = useRef(new Set())
+  const [editingCount, setEditingCount] = useState(0)
+  const paused = !!edit || editingCount > 0
+  const modalOpen = useRef(!!edit)
+  modalOpen.current = !!edit
+  const editing = useRef(paused)
+  editing.current = paused
+  const buffered = useRef(null)
+  const loadedRange = useRef('')
+  const onEditingChange = useCallback((id, active) => {
+    if (active) activeEditors.current.add(id)
+    else activeEditors.current.delete(id)
+    editing.current = modalOpen.current || activeEditors.current.size > 0
+    setEditingCount(activeEditors.current.size)
+  }, [])
+  const requestRefresh = useVisibleRefresh(true, () => setRevision(value => value + 1), paused)
+  useEffect(() => {
+    if (!paused && buffered.current) { setRows(buffered.current); buffered.current = null }
+  }, [paused])
   const closeFilter = useCallback(() => setOpen(null), [])
   useEffect(() => { safeStorage.setItem(`gas-full-list:${session.email}`, JSON.stringify({ search, company, filtersByCompany: allFilters, sort })) }, [session.email, search, company, allFilters, sort])
   useEffect(() => {
     const controller = new AbortController()
-    setLoading(true); setError(''); setRows([])
+    const rangeKey = `${session.email}|${range.start}|${range.end}`
+    if (loadedRange.current !== rangeKey) { setRows([]); buffered.current = null; loadedRange.current = rangeKey }
+    setLoading(true); setError('')
+    const publish = data => {
+      if (controller.signal.aborted) return
+      if (editing.current) buffered.current = data
+      else setRows(data)
+    }
     loadFullList(session.email, range.start, range.end, controller.signal, data => {
-      if (!controller.signal.aborted) { setRows(data); setLoading(false) }
-    }).then(data => { if (!controller.signal.aborted) setRows(data) })
-      .catch(error => { if (!controller.signal.aborted) { setRows([]); setError(error.message) } })
+      if (!controller.signal.aborted) { publish(data); setLoading(false) }
+    }).then(publish)
+      .catch(error => { if (!controller.signal.aborted) setError(error.message) })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
   }, [session.email, range, revision])
@@ -83,9 +108,9 @@ export default function FullListPage({ session }) {
     </form>
     {error && <p className="list-error" role="alert">{error}</p>}
     <div className="list-summary"><span>{range.start.replaceAll('-', '/')} ~ {range.end.replaceAll('-', '/')}</span><strong>{number(selected.length)}건</strong><span>가중분 {number(totals.weight)}분</span>{session.canViewRevenue === true && <span>매출액 {number(totals.revenue)}원</span>}{loading && <span role="status">데이터 확인 중…</span>}<button onClick={() => { setFilters({}); setSearch('') }}>검색·필터 초기화</button></div>
-    <div className="list-table-scroll" onScroll={closeFilter} aria-busy={loading}><table><colgroup>{columns.map(column => <col key={column.key} style={{ width: column.width }} />)}{session.canManageAccess && <col style={{width:70}} />}</colgroup><thead><tr>{columns.map(column => <th key={column.key} title={column.key === 'salesQty' ? '페이지 소스의 방송시작 재고수량 - 방송종료 재고수량' : undefined}><div><button className="list-sort" onClick={() => setSort({ key: column.key, direction: sort.key === column.key && sort.direction === 'asc' ? 'desc' : 'asc' })}>{column.label}{sort.key === column.key ? sort.direction === 'asc' ? ' ↑' : ' ↓' : ''}</button><button className={filters[column.key] ? 'list-filter-button active' : 'list-filter-button'} aria-label={`${column.label} 필터`} aria-expanded={open?.column.key === column.key} onClick={event => { const anchor = event.currentTarget.getBoundingClientRect(); setOpen(previous => previous?.column.key === column.key ? null : { column, anchor }) }}>▽</button></div></th>)}{session.canManageAccess && <th>수정</th>}</tr></thead><tbody>{selected.slice((currentPage - 1) * 100, currentPage * 100).map(row => <tr key={row.id}>{columns.map(column => <td key={column.key} className={column.numeric ? 'numeric' : undefined} title={column.key === 'salesQty' ? '페이지 소스의 방송시작 재고수량 - 방송종료 재고수량' : display(row, column)}>{session.canManageAccess ? <EditableListCell row={row} column={column} onSaved={() => { invalidateMonthChecks(session.email); setRevision(value => value + 1) }}><span className={column.key === 'company' ? `list-company ${row.company === 'SSG' ? 'ssg' : row.company === 'K' ? 'k' : 'sk'}` : undefined}>{display(row, column)}</span></EditableListCell> : <span className={column.key === 'company' ? `list-company ${row.company === 'SSG' ? 'ssg' : row.company === 'K' ? 'k' : 'sk'}` : undefined}>{display(row, column)}</span>}</td>)}{session.canManageAccess && <td><button aria-label={`${row.brand} 행 수정`} onClick={() => setEdit({mode:'row',row})}>수정</button></td>}</tr>)}{!selected.length && <tr><td colSpan={columns.length + (session.canManageAccess ? 1 : 0)}>{loading ? '데이터를 불러오는 중…' : '조건에 맞는 방송이 없습니다.'}</td></tr>}</tbody></table></div>
+    <div className="list-table-scroll" onScroll={closeFilter} aria-busy={loading}><table><colgroup>{columns.map(column => <col key={column.key} style={{ width: column.width }} />)}{session.canManageAccess && <col style={{width:70}} />}</colgroup><thead><tr>{columns.map(column => <th key={column.key} title={column.key === 'salesQty' ? '페이지 소스의 방송시작 재고수량 - 방송종료 재고수량' : undefined}><div><button className="list-sort" onClick={() => setSort({ key: column.key, direction: sort.key === column.key && sort.direction === 'asc' ? 'desc' : 'asc' })}>{column.label}{sort.key === column.key ? sort.direction === 'asc' ? ' ↑' : ' ↓' : ''}</button><button className={filters[column.key] ? 'list-filter-button active' : 'list-filter-button'} aria-label={`${column.label} 필터`} aria-expanded={open?.column.key === column.key} onClick={event => { const anchor = event.currentTarget.getBoundingClientRect(); setOpen(previous => previous?.column.key === column.key ? null : { column, anchor }) }}>▽</button></div></th>)}{session.canManageAccess && <th>수정</th>}</tr></thead><tbody>{selected.slice((currentPage - 1) * 100, currentPage * 100).map(row => <tr key={row.id}>{columns.map(column => <td key={column.key} className={column.numeric ? 'numeric' : undefined} title={column.key === 'salesQty' ? '페이지 소스의 방송시작 재고수량 - 방송종료 재고수량' : display(row, column)}>{session.canManageAccess ? <EditableListCell row={row} column={column} onEditingChange={onEditingChange} onSaved={() => { invalidateMonthChecks(session.email); requestRefresh() }}><span className={column.key === 'company' ? `list-company ${row.company === 'SSG' ? 'ssg' : row.company === 'K' ? 'k' : 'sk'}` : undefined}>{display(row, column)}</span></EditableListCell> : <span className={column.key === 'company' ? `list-company ${row.company === 'SSG' ? 'ssg' : row.company === 'K' ? 'k' : 'sk'}` : undefined}>{display(row, column)}</span>}</td>)}{session.canManageAccess && <td><button aria-label={`${row.brand} 행 수정`} onClick={() => setEdit({mode:'row',row})}>수정</button></td>}</tr>)}{!selected.length && <tr><td colSpan={columns.length + (session.canManageAccess ? 1 : 0)}>{loading ? '데이터를 불러오는 중…' : '조건에 맞는 방송이 없습니다.'}</td></tr>}</tbody></table></div>
     <nav className="list-pagination" aria-label="전체 목록 페이지"><span>100건씩 표시</span><button disabled={currentPage <= 1} onClick={() => setPage(value => value - 1)}>이전</button><b>{currentPage} / {pages}</b><button disabled={currentPage >= pages} onClick={() => setPage(currentPage + 1)}>다음</button></nav>
     {open && <ListColumnFilter key={open.column.key} {...open} rows={companyRows} display={display} filter={filters[open.column.key]} onClose={closeFilter} onSort={direction => setSort({ key: open.column.key, direction })} onApply={filter => setFilters(previous => ({ ...previous, [open.column.key]: filter }))} />}
-    {edit && <DataEditModal {...edit} rows={companyRows} company={company} onClose={() => setEdit(null)} onSaved={() => { invalidateMonthChecks(session.email); setRevision(value => value + 1) }} />}
+    {edit && <DataEditModal {...edit} rows={companyRows} company={company} onClose={() => setEdit(null)} onSaved={() => { invalidateMonthChecks(session.email); requestRefresh() }} />}
   </main>
 }

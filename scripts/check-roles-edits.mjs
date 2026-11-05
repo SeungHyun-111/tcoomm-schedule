@@ -12,7 +12,7 @@ for(const role of ['viewer','revenue','admin']) {
  await page.goto('https://roles.test/')
  await page.evaluate(assets => { window.mockAssets = assets }, Object.fromEntries([['weekly',2],['access',3],['logs',4],['list',5]].map(([key,n]) => [key, {css:readFileSync(new URL('../gas/Styles'+n+'.html',import.meta.url),'utf8'),script:readFileSync(new URL('../gas/Scripts'+n+'.html',import.meta.url),'utf8')}])))
  await page.evaluate(initialRole=>{
-  window.mockRole=initialRole;window.editHistory=[];window.roleAssignments=[]
+  window.mockRole=initialRole;window.editHistory=[];window.roleAssignments=[];window.requestCounts={}
   const email=initialRole==='admin'?'l.sh@skstoa.com':initialRole+'@skstoa.com'
   let version='v1'
   const raw={SSG:[{date:'2026-10-26',hour:10,minute:0,brand:'BrandA',productName:'상품A',dataProductName:'데이터상품A',org:'팀A',mdCategory:'뷰티',simpleMin:60,weightedMin:30,brandWeightedMin:20,price:2000,salesQty:15,revenue:9876543,company:'SSG'}],K:[],SK:[]}
@@ -20,6 +20,8 @@ for(const role of ['viewer','revenue','admin']) {
   const access=()=>({role:window.mockRole,canViewRevenue:window.mockRole!=='viewer',canManageAccess:window.mockRole==='admin',dataAccessKey:window.mockRole+':test'})
   const payload=()=>{const data=JSON.parse(JSON.stringify(raw));if(window.mockRole==='viewer')for(const rows of Object.values(data))for(const row of rows)delete row.revenue;return{updatedAt:version,data}}
   window.google={script:{run:{withSuccessHandler(success){return{withFailureHandler(failure){return new Proxy({},{get:(_,name)=>(...args)=>setTimeout(()=>{
+   window.requestCounts[name]=(window.requestCounts[name]||0)+1
+   if(name==='getCompetitorMonths'&&window.failNextRead){window.failNextRead=false;failure({message:'Transient network fixture'});return}
    if(name==='getDashboardBootstrap')success({email,...access(),months:['202610'],currentMonth:'202610',competitorWeek:'2026-10-26'})
    else if(name==='getDashboardScreenAssets')success(window.mockAssets[args[0]])
    else if(name==='recordDashboardVisit')success(true)
@@ -127,6 +129,22 @@ for(const role of ['viewer','revenue','admin']) {
  assert.equal(await page.getByRole('button',{name:'브랜드명 일괄 수정',exact:true}).count(),role==='admin'?1:0)
  if(role==='admin') {
   const cell=page.locator('.list-table-scroll tbody tr').first().locator('td').nth(7)
+  await page.evaluate(()=>{window.__MSM_MONTH_CACHE__.checked.clear();window.readsBefore=window.requestCounts.getCompetitorMonths||0})
+  await cell.dblclick()
+  await cell.locator('input').fill('KeepDraft')
+  await page.evaluate(()=>{window.dispatchEvent(new Event('focus'));document.dispatchEvent(new Event('visibilitychange'));window.dispatchEvent(new Event('focus'))})
+  await page.waitForTimeout(450)
+  assert.equal(await cell.locator('input').inputValue(),'KeepDraft')
+  assert.equal(await page.evaluate(()=>window.requestCounts.getCompetitorMonths||0),await page.evaluate(()=>window.readsBefore))
+  await cell.locator('input').press('Escape')
+  await page.waitForFunction(()=>(window.requestCounts.getCompetitorMonths||0)===window.readsBefore+1)
+  await page.waitForTimeout(250)
+  assert.equal(await page.evaluate(()=>window.requestCounts.getCompetitorMonths),await page.evaluate(()=>window.readsBefore+1))
+  await page.evaluate(()=>{window.__MSM_MONTH_CACHE__.checked.clear();window.failNextRead=true;window.dispatchEvent(new Event('focus'));document.dispatchEvent(new Event('visibilitychange'))})
+  await page.waitForFunction(()=>document.querySelector('.list-error')?.textContent.includes('Transient network fixture'))
+  assert.ok(await page.locator('.list-table-scroll tbody tr').count()>0)
+  assert.equal(await cell.locator('input').count(),0)
+
   await cell.dblclick()
   const editor=cell.locator('input')
   await editor.fill('InlineSaved')

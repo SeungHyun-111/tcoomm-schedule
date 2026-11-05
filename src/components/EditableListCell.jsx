@@ -1,15 +1,21 @@
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { saveEdits } from '../services/saveEdits'
 import { parseListDate } from '../utils/listDates'
 
 const numeric = new Set(['hour', 'minute', 'simpleMin', 'price', 'brandWeightedMin', 'salesQty', 'revenue'])
-export default function EditableListCell({ row, column, children, onSaved }) {
+export default function EditableListCell({ row, column, children, onSaved, onEditingChange }) {
   const key = column.key === 'weight' ? 'brandWeightedMin' : column.key
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const saving = useRef(false)
+  useEffect(() => {
+    if (!editing) return
+    const id = `${row.id}:${column.key}`
+    onEditingChange?.(id, true)
+    return () => onEditingChange?.(id, false)
+  }, [editing, row.id, column.key, onEditingChange])
   function begin() {
     if (busy) return
     setDraft(String(row.sourceRow[key] ?? '')); setError(''); setEditing(true)
