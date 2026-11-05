@@ -1,0 +1,32 @@
+.gas-access-root { flex:1; }
+.access-page { max-width:1280px; margin:auto; padding:36px 28px 48px; color:var(--color-text,#263442); font-family:var(--font-ui,sans-serif); }
+.access-page>header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:24px; }
+.access-eyebrow { color:#72879a; font-size:11px; font-weight:600; letter-spacing:.12em; }
+.access-page h1 { margin:10px 0; font-size:26px; font-weight:700; }
+.access-page p { font-size:13px; line-height:1.7; margin:8px 0 0; color:#526477; }
+.access-session { color:#687b8c; font-size:12px; padding-top:10px; }
+.access-card { background:var(--glass-surface,white); border:1px solid #e1e6eb; border-radius:12px; box-shadow:var(--shadow-card); backdrop-filter:var(--glass-blur); padding:22px; margin-bottom:18px; }
+.access-card h2 { font-size:16px; margin:0 0 16px; font-weight:600; }
+.access-card h2 small { font-size:12px; color:#687b8c; margin-left:6px; }
+.access-viewer-info { border-left:3px solid #426a8c; }
+.access-viewer-info>strong { font-size:14px; }
+.access-page form label { display:block; font-size:12px; margin-bottom:8px; }
+.access-form-row { display:flex; gap:10px; max-width:620px; }
+.access-form-row input { flex:1; min-width:0; border:1px solid #cbd6e0; border-radius:7px; padding:10px 12px; font:inherit; font-size:14px; background:#fff; color:#263442; }
+.access-page button { border:1px solid #cbd6e0; border-radius:7px; padding:9px 14px; background:#fff; color:#426a8c; font:inherit; font-size:12px; cursor:pointer; white-space:nowrap; }
+.access-page button:disabled { opacity:.45; cursor:default; }
+.access-form-row button { background:#426a8c; border-color:#426a8c; color:#fff; font-weight:600; }
+.access-page .access-error { border:1px solid #ebc6c9; background:#fff0ef; color:#953f42; padding:12px 16px; border-radius:8px; margin-bottom:18px; }
+.access-page .access-notice { background:#eaf0f6; color:#426a8c; padding:12px 16px; border-radius:8px; margin-bottom:18px; }
+.access-list-title { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:12px; }
+.access-list-title h2 { margin:0; }
+.access-table-scroll { overflow:auto; }
+.access-page table { border-collapse:collapse; width:100%; min-width:760px; font-size:12px; line-height:1.5; }
+.access-page th { text-align:left; background:#f0f2f5; color:#526477; font-weight:500; }
+.access-page td,.access-page th { padding:13px 12px; border-bottom:1px solid #e1e6eb; }
+.access-page td strong { font-weight:500; }
+.access-badge { display:inline-block; margin-left:10px; padding:3px 7px; font-size:10px; color:#426a8c; background:#eaf0f6; border-radius:5px; }
+.access-muted { color:#8795a2; }
+.access-page select { border:1px solid #cbd6e0; background:#fff; color:#263442; padding:8px; border-radius:7px; font:inherit; font-size:12px; }
+.access-page .access-revoke { color:#8d5056; border-color:#e3cdd0; background:#fff; }
+@media(max-width:700px) { .access-page { padding:24px 16px; }.access-page>header { flex-direction:column; }.access-card { padding:16px; } }

@@ -1,0 +1,19 @@
+.gas-urban {
+  --bg:#152b43; --bg2:#223a54; --bg3:#2b435e; --bg4:#18334c;
+  --text:#f7faff; --text2:#e0ebfa; --text3:#c8d8ed;
+  --border:#e9f4ff38; --accent:#8ebdff; --red:#ffb3b3; --ca-t:#b5d7ff;
+}
+.gas-weekly-root { flex:1; min-height:0; display:flex; flex-direction:column; }
+body:has(.gas-weekly-root) #root { height:100dvh; min-height:0; overflow:hidden; }
+.gas-weekly-root > .competitor-page { flex:1; min-height:0; }
+.competitor-page.forecast-page.is-urban {
+  --bg2:rgba(38,58,84,.7); --bg3:rgba(197,222,255,.09); --bg4:rgba(31,51,78,.7);
+  --border:rgba(233,244,255,.22); --text:#f7faff; --text2:#e0ebfa; --text3:#c8d8ed;
+  --accent:#8ebdff; --green:#96dfcb; --red:#ffb3b3;
+  color:#f7faff; background:linear-gradient(135deg,#263e58 0%,#1c334c 45%,#142b41 100%);
+  color-scheme:dark;
+}
+.gas-urban .competitor-brand-summary-panel,.gas-urban .competitor-brand-broadcast-tooltip,.gas-urban .competitor-program-tooltip,.gas-urban .competitor-refresh-panel {
+  background:linear-gradient(135deg,#233e5af5,#142c45fa); color:var(--text); border:1px solid var(--border); backdrop-filter:blur(14px);
+}
+.competitor-page .competitor-highlight-search { max-width:100%; }

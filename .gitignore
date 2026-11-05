@@ -1,0 +1,14 @@
+node_modules/
+.clasp.json
+.clasprc.json
+.env*
+artifacts/
+
+# Never publish local credentials or private keys.
+firebase-service-account*.json
+*-firebase-adminsdk-*.json
+*.private.json
+*.pem
+*.key
+credentials.json
+service-account*.json

@@ -1,0 +1,15 @@
+import React, { Fragment, useEffect, useState } from 'react'
+import { callGas } from '../services/gasApi'
+
+const names = { org:'조직',date:'DATE',hour:'HOUR',minute:'MINUTE',simpleMin:'단순분',mdCategory:'MD분류',brand:'브랜드',productName:'상품명',price:'판매가격',company:'회사명',brandWeightedMin:'가중분',dataProductName:'라방바상품명',salesQty:'판매수량',revenue:'매출액' }
+export default function DataChangeLogPanel({ query }) {
+  const [page,setPage] = useState(1), [result,setResult] = useState(null), [error,setError] = useState(''), [open,setOpen] = useState(''), [detailPage,setDetailPage] = useState(1)
+  useEffect(() => { setPage(1); setOpen('') }, [query.start,query.end,query.email])
+  useEffect(() => {
+    let active = true
+    setError('')
+    callGas('getDataChangeLogs',{start:query.start,end:query.end,email:query.email,page}).then(value => { if(active)setResult(value) }).catch(error=>{if(active){setResult(null);setError(error.message)}})
+    return ()=>{active=false}
+  },[query.start,query.end,query.email,page])
+  return <section className="logs-card data-change-logs"><h2>데이터 변경 로그 <small>{result?.total || 0}건</small></h2><p>위 조회 기간과 이메일 검색(변경자)에 해당하는 내역입니다.</p>{error && <p role="alert">{error}</p>}{result && <><div className="logs-table-scroll"><table><thead><tr><th>변경 일시 (KST)</th><th>변경자</th><th>월</th><th>작업 / 건수</th><th>결과</th><th>내역</th></tr></thead><tbody>{result.rows.map(item=><Fragment key={item.id}><tr><td>{new Date(item.createdAt).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'})}</td><td>{item.actor}</td><td>{item.month}</td><td>{item.kind==='brand'?'브랜드 일괄 수정':'행 수정'} · {item.count}건</td><td>{({applied:'적용 완료',pending:'진행/확인 필요',failed:'미적용',sync_pending:'원본 반영·인덱스 확인 필요'})[item.status] || item.status}</td><td><button onClick={()=>{setOpen(open===item.id?'':item.id);setDetailPage(1)}}>상세</button></td></tr>{open===item.id && <tr><td colSpan={6}><p>{item.message || ''}</p><table><thead><tr><th>회사 · 방송일 · 행</th><th>필드</th><th>변경 전</th><th>변경 후</th></tr></thead><tbody>{(item.changes||[]).slice((detailPage-1)*100,detailPage*100).flatMap((change,index)=>Object.keys(change.after).map(key=><tr key={`${index}-${key}`}><td>{change.company} · {change.date} · {change.index+1}</td><td>{names[key]||key}</td><td>{String(change.before[key]??'')}</td><td>{String(change.after[key]??'')}</td></tr>))}</tbody></table>{item.changes?.length>100 && <nav className="logs-pagination"><button disabled={detailPage===1} onClick={()=>setDetailPage(value=>value-1)}>이전 내역</button><span>{detailPage} / {Math.ceil(item.changes.length/100)}</span><button disabled={detailPage>=Math.ceil(item.changes.length/100)} onClick={()=>setDetailPage(value=>value+1)}>다음 내역</button></nav>}</td></tr>}</Fragment>)}{!result.rows.length && <tr><td colSpan={6}>변경 기록이 없습니다.</td></tr>}</tbody></table></div><nav className="logs-pagination"><button disabled={result.page<=1} onClick={()=>setPage(value=>value-1)}>이전 변경</button><span>{result.page} / {result.pages}</span><button disabled={result.page>=result.pages} onClick={()=>setPage(value=>value+1)}>다음 변경</button></nav></>}</section>
+}

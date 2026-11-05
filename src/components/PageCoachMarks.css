@@ -1,0 +1,7 @@
+.page-guide-overlay { position:fixed; inset:0; z-index:14000; background:#18263845; }
+.page-guide-target { position:fixed; border:2px solid #7db7ff; border-radius:8px; box-sizing:border-box; box-shadow:0 0 0 9999px #15253755; pointer-events:none; }
+.page-guide-card { position:fixed; width:min(360px,calc(100vw - 32px)); max-height:calc(100dvh - 32px); overflow:auto; box-sizing:border-box; padding:20px; background:#fff; color:#263442; border:1px solid #e1e6eb; border-radius:12px; box-shadow:0 12px 40px #0004; outline:none; font:14px/1.6 var(--font-ui,sans-serif); }
+.page-guide-card h2 { margin:8px 0; font-size:18px; }.page-guide-card p { margin:8px 0 18px; white-space:normal; }.page-guide-card small,.page-guide-wait { color:#657687; }
+.page-guide-card footer,.page-guide-card footer>div { display:flex; justify-content:space-between; gap:8px; }.page-guide-card button { padding:7px 12px; border:1px solid #cbd6e0; border-radius:6px; background:#f3f5f7; color:#263442; font:inherit; cursor:pointer; }
+.gas-user-identity { display:flex; align-items:center; gap:7px; white-space:nowrap; }.gas-user-role { padding:3px 7px; border:1px solid #ffffff50; border-radius:5px; font-size:11px; }.gas-user-email { opacity:.8; font-size:11px; }
+.gas-header .gas-user-identity>strong { font-size:14px; letter-spacing:0; }
